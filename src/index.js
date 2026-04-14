@@ -2,6 +2,17 @@ export default {
   async fetch(request, env) {
     try {
       const url = new URL(request.url);
+      const authError = checkAuth(request, env, url);
+
+      if (authError) {
+        return json(
+          {
+            ok: false,
+            error: authError,
+          },
+          401
+        );
+      }
 
       if (request.method === "GET") {
         return json({
@@ -58,6 +69,32 @@ export default {
     }
   },
 };
+
+function checkAuth(request, env, url) {
+  const expectedToken = typeof env.TOKEN === "string" ? env.TOKEN.trim() : "";
+
+  if (!expectedToken) {
+    return "Missing config: TOKEN";
+  }
+
+  const authHeader = request.headers.get("authorization") || "";
+  const bearerToken = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : "";
+  const headerToken = request.headers.get("x-webhook-token") || "";
+  const queryToken = url.searchParams.get("token") || "";
+  const providedToken = bearerToken || headerToken.trim() || queryToken.trim();
+
+  if (!providedToken) {
+    return "Unauthorized";
+  }
+
+  if (providedToken !== expectedToken) {
+    return "Invalid token";
+  }
+
+  return null;
+}
 
 function parsePayload(bodyText, contentType) {
   if (!bodyText) {
