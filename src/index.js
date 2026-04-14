@@ -1,10 +1,24 @@
 import { buildMessageTemplate } from "./templates.js";
+import { sendToTelegram } from "./senders/telegram.js";
+import { sendToWxPusher } from "./senders/wxpusher.js";
 
 export default {
   async fetch(request, env) {
     try {
       const url = new URL(request.url);
-      const authError = checkAuth(request, env, url);
+      const channel = resolveChannel(url.pathname);
+
+      if (!channel) {
+        return json(
+          {
+            ok: false,
+            error: "Not found",
+          },
+          404
+        );
+      }
+
+      const authError = checkAuth(request, env, url, channel);
 
       if (authError) {
         return json(
@@ -19,7 +33,8 @@ export default {
       if (request.method === "GET") {
         return json({
           ok: true,
-          service: "webhook-to-wxpusher",
+          service: "webhook-notify",
+          channel,
           now: new Date().toISOString(),
           path: url.pathname,
         });
@@ -49,12 +64,13 @@ export default {
         receivedAt: new Date().toISOString(),
       };
       const message = buildMessageTemplate({ payload, request, source });
-      const wxResult = await sendToWxPusher(env, message.title, message.html);
+      const result = await sendByChannel(channel, env, message);
 
       return json({
         ok: true,
+        channel,
         title: message.title,
-        wxpusher: wxResult,
+        result,
       });
     } catch (error) {
       return json(
@@ -68,11 +84,23 @@ export default {
   },
 };
 
-function checkAuth(request, env, url) {
-  const expectedToken = typeof env.TOKEN === "string" ? env.TOKEN.trim() : "";
+function resolveChannel(pathname) {
+  if (pathname.startsWith("/wx/") || pathname === "/wx") {
+    return "wx";
+  }
+
+  if (pathname.startsWith("/tg/") || pathname === "/tg") {
+    return "tg";
+  }
+
+  return "";
+}
+
+function checkAuth(request, env, url, channel) {
+  const expectedToken = getChannelToken(env, channel);
 
   if (!expectedToken) {
-    return "Missing config: TOKEN";
+    return `Missing config: ${channel === "wx" ? "WXPUSHER_TOKEN" : "TG_TOKEN"}`;
   }
 
   const authHeader = request.headers.get("authorization") || "";
@@ -94,6 +122,18 @@ function checkAuth(request, env, url) {
   return null;
 }
 
+function getChannelToken(env, channel) {
+  if (channel === "wx") {
+    return typeof env.WXPUSHER_TOKEN === "string" ? env.WXPUSHER_TOKEN.trim() : "";
+  }
+
+  if (channel === "tg") {
+    return typeof env.TG_TOKEN === "string" ? env.TG_TOKEN.trim() : "";
+  }
+
+  return "";
+}
+
 function parsePayload(bodyText, contentType) {
   if (!bodyText) {
     return {};
@@ -113,59 +153,16 @@ function parsePayload(bodyText, contentType) {
   };
 }
 
-async function sendToWxPusher(env, title, content) {
-  const appToken = env.WXPUSHER_APP_TOKEN;
-  const uids = splitCsv(env.WXPUSHER_UIDS);
-  const topicIds = splitNumberCsv(env.WXPUSHER_TOPIC_IDS);
-
-  if (!appToken) {
-    throw new Error("Missing secret: WXPUSHER_APP_TOKEN");
+async function sendByChannel(channel, env, message) {
+  if (channel === "wx") {
+    return sendToWxPusher(env, message);
   }
 
-  if (uids.length === 0 && topicIds.length === 0) {
-    throw new Error("Missing target: set WXPUSHER_UIDS or WXPUSHER_TOPIC_IDS");
+  if (channel === "tg") {
+    return sendToTelegram(env, message);
   }
 
-  const response = await fetch("https://wxpusher.zjiecode.com/api/send/message", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      appToken,
-      content,
-      summary: title,
-      contentType: 2,
-      uids,
-      topicIds,
-      verifyPayType: 0,
-    }),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok || result.code !== 1000) {
-    throw new Error(`WxPusher API failed: ${JSON.stringify(result)}`);
-  }
-
-  return result;
-}
-
-function splitCsv(value) {
-  if (!value) {
-    return [];
-  }
-
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function splitNumberCsv(value) {
-  return splitCsv(value)
-    .map((item) => Number(item))
-    .filter((item) => Number.isFinite(item));
+  throw new Error(`Unsupported channel: ${channel}`);
 }
 
 function json(data, status = 200) {
