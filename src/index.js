@@ -1,3 +1,5 @@
+import { buildMessageTemplate } from "./templates.js";
+
 export default {
   async fetch(request, env) {
     try {
@@ -36,9 +38,6 @@ export default {
       const contentType = request.headers.get("content-type") || "";
       const bodyText = await request.text();
       const payload = parsePayload(bodyText, contentType);
-
-      const title = buildTitle(payload, request);
-      const summary = buildSummary(payload);
       const source = {
         method: request.method,
         path: url.pathname,
@@ -49,13 +48,12 @@ export default {
         userAgent: request.headers.get("user-agent") || "unknown",
         receivedAt: new Date().toISOString(),
       };
-
-      const html = renderHtmlMessage(title, summary, payload, source);
-      const wxResult = await sendToWxPusher(env, title, html);
+      const message = buildMessageTemplate({ payload, request, source });
+      const wxResult = await sendToWxPusher(env, message.title, message.html);
 
       return json({
         ok: true,
-        title,
+        title: message.title,
         wxpusher: wxResult,
       });
     } catch (error) {
@@ -115,52 +113,6 @@ function parsePayload(bodyText, contentType) {
   };
 }
 
-function buildTitle(payload, request) {
-  if (typeof payload.title === "string" && payload.title.trim()) {
-    return payload.title.trim();
-  }
-
-  if (typeof payload.event === "string" && payload.event.trim()) {
-    return `Webhook: ${payload.event.trim()}`;
-  }
-
-  if (typeof payload.type === "string" && payload.type.trim()) {
-    return `Webhook: ${payload.type.trim()}`;
-  }
-
-  const path = new URL(request.url).pathname;
-  return `Webhook Notification ${path}`;
-}
-
-function buildSummary(payload) {
-  if (typeof payload.content === "string" && payload.content.trim()) {
-    return payload.content.trim();
-  }
-
-  if (typeof payload.message === "string" && payload.message.trim()) {
-    return payload.message.trim();
-  }
-
-  return "Received a new webhook event.";
-}
-
-function renderHtmlMessage(title, summary, payload, source) {
-  const prettyPayload = escapeHtml(JSON.stringify(payload, null, 2));
-
-  return `
-    <h2>${escapeHtml(title)}</h2>
-    <p>${escapeHtml(summary)}</p>
-    <hr />
-    <p><b>Path:</b> ${escapeHtml(source.path)}</p>
-    <p><b>Method:</b> ${escapeHtml(source.method)}</p>
-    <p><b>IP:</b> ${escapeHtml(source.ip)}</p>
-    <p><b>User-Agent:</b> ${escapeHtml(source.userAgent)}</p>
-    <p><b>Received At:</b> ${escapeHtml(source.receivedAt)}</p>
-    <hr />
-    <pre>${prettyPayload}</pre>
-  `.trim();
-}
-
 async function sendToWxPusher(env, title, content) {
   const appToken = env.WXPUSHER_APP_TOKEN;
   const uids = splitCsv(env.WXPUSHER_UIDS);
@@ -214,15 +166,6 @@ function splitNumberCsv(value) {
   return splitCsv(value)
     .map((item) => Number(item))
     .filter((item) => Number.isFinite(item));
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function json(data, status = 200) {
