@@ -1,6 +1,7 @@
 import { buildMessageTemplate } from "./templates.js";
 import { sendToTelegram } from "./senders/telegram.js";
 import { sendToWxPusher } from "./senders/wxpusher.js";
+import { sendToPushMe } from "./senders/pushme.js";
 
 export default {
   async fetch(request, env) {
@@ -156,6 +157,10 @@ function resolveChannel(pathname) {
     return "tg";
   }
 
+  if (pathname.startsWith("/pm/") || pathname === "/pm") {
+    return "pm";
+  }
+
   return "";
 }
 
@@ -178,6 +183,8 @@ function checkAuth(request, env, url, channel) {
       configs = JSON.parse(env.WXPUSHER);
     } else if (channel === "tg" && env.TELEGRAM) {
       configs = JSON.parse(env.TELEGRAM);
+    } else if (channel === "pm" && env.PUSHME) {
+      configs = JSON.parse(env.PUSHME);
     }
   } catch (e) {
     return { ok: false, error: `Invalid config format for channel: ${channel}` };
@@ -221,6 +228,10 @@ async function sendByChannel(channel, config, message) {
 
   if (channel === "tg") {
     return sendToTelegram(config, message);
+  }
+
+  if (channel === "pm") {
+    return sendToPushMe(config, message);
   }
 
   throw new Error(`Unsupported channel: ${channel}`);
