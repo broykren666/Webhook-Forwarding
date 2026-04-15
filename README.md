@@ -79,49 +79,12 @@ curl -X POST "https://example.domain.com/wx/?token=your-wx-token" \
 }
 ```
 
-### 编写本地配置文件
-
-*创建本地 wrangler.toml 文件示例*：
-
-```toml
-name = "webhook"
-main = "src/index.js"
-compatibility_date = "2026-04-14"
-
-# 自定义域名
-# workers_dev = false
-# preview_urls = false
-# [[routes]]
-# pattern = "example.domain.com"
-# custom_domain = true
-
-[observability]
-enabled = true
-
-[ai]
-binding = "AI"
-
-[[queues.producers]]
-queue = "webhook-queue"
-binding = "WEBHOOK_QUEUE"
-
-[[queues.consumers]]
-queue = "webhook-queue"
-max_batch_size = 5
-max_batch_timeout = 2
-```
-
-*创建本地 .dev.vars 文件示例*：
-
-```.env
-WXPUSHER='[{"APP_TOKEN":"your-app-token", "UIDS":"your-uid", "TOKEN":"your-wx-token"}]'
-TELEGRAM='[{"BOT_TOKEN":"your-bot-token", "CHAT_ID":"your-chat-id", "TOKEN":"your-tg-token"}]'
-PUSHME='[{"PUSH_KEY":"your-push-key", "TOKEN":"your-pm-token"}]'
-```
-
 ### 部署操作
 
-1. 设置变量：
+配置文件：
+修改文件名：example.wrangler.toml，为：wrangler.toml。
+
+设置变量：
 
 ```bash
 # 命令：
@@ -165,13 +128,13 @@ npx wrangler secret put PUSHME
 | PUSH_KEY | your-push-key | PushMe 的 `push_key`            |
 | TOKEN    | your-tg-token | `/pm/` 路径使用的特定鉴权 token |
 
-1. 正式部署时，**必须先在云端创建消息队列** (必须执行一次):
+正式部署时，**必须先在云端创建消息队列** (必须执行一次):
 
 ```bash
 npx wrangler queues create webhook-queue
 ```
 
-1. **发布上线**:
+发布上线:
 
 ```bash
 npx wrangler deploy
@@ -183,10 +146,18 @@ npx wrangler deploy
 
 1. 完成发布上线。
 
-2. 在项目开启终端执行：
+2. 创建本地 .dev.vars 文件示例：
+
+   ```.env
+   WXPUSHER='[{"APP_TOKEN":"your-app-token", "UIDS":"your-uid", "TOKEN":"your-wx-token"}]'
+   TELEGRAM='[{"BOT_TOKEN":"your-bot-token", "CHAT_ID":"your-chat-id", "TOKEN":"your-tg-token"}]'
+   PUSHME='[{"PUSH_KEY":"your-push-key", "TOKEN":"your-pm-token"}]'
+   ```
+
+3. 在项目开启终端执行：
 
    ```bash
    node test-dashboard.mjs
    ```
 
-3. 在浏览器打开 `http://localhost:3000` ，目标服务节点 (Host)中填写你的项目自定义域名 <https://example.domain.com> ，即可通过精美的可视页面体验一键消息推播，及检测 AI 降维总结效果！
+4. 在浏览器打开 `http://localhost:3000` ，目标服务节点 (Host)中填写你的项目自定义域名 <https://example.domain.com> ，即可通过精美的可视页面体验一键消息推播，及检测 AI 降维总结效果！
