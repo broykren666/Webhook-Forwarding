@@ -18,17 +18,18 @@ export default {
         );
       }
 
-      const authError = checkAuth(request, env, url, channel);
+      const validationResult = checkAuth(request, env, url, channel);
 
-      if (authError) {
+      if (!validationResult.ok) {
         return json(
           {
             ok: false,
-            error: authError,
+            error: validationResult.error,
           },
           401
         );
       }
+      const activeConfig = validationResult.config;
 
       if (request.method === "GET") {
         return json({
@@ -88,7 +89,7 @@ export default {
         }
       }
 
-      const result = await sendByChannel(channel, env, message);
+      const result = await sendByChannel(channel, activeConfig, message);
 
       return json({
         ok: true,
@@ -121,12 +122,6 @@ function resolveChannel(pathname) {
 }
 
 function checkAuth(request, env, url, channel) {
-  const expectedToken = getChannelToken(env, channel);
-
-  if (!expectedToken) {
-    return `Missing config: ${channel === "wx" ? "WXPUSHER_TOKEN" : "TG_TOKEN"}`;
-  }
-
   const authHeader = request.headers.get("authorization") || "";
   const bearerToken = authHeader.startsWith("Bearer ")
     ? authHeader.slice("Bearer ".length).trim()
@@ -136,26 +131,30 @@ function checkAuth(request, env, url, channel) {
   const providedToken = bearerToken || headerToken.trim() || queryToken.trim();
 
   if (!providedToken) {
-    return "Unauthorized";
+    return { ok: false, error: "Unauthorized" };
   }
 
-  if (providedToken !== expectedToken) {
-    return "Invalid token";
+  let configs = [];
+  try {
+    if (channel === "wx" && env.WXPUSHER) {
+      configs = JSON.parse(env.WXPUSHER);
+    } else if (channel === "tg" && env.TELEGRAM) {
+      configs = JSON.parse(env.TELEGRAM);
+    }
+  } catch (e) {
+    return { ok: false, error: `Invalid config format for channel: ${channel}` };
   }
 
-  return null;
-}
-
-function getChannelToken(env, channel) {
-  if (channel === "wx") {
-    return typeof env.WXPUSHER_TOKEN === "string" ? env.WXPUSHER_TOKEN.trim() : "";
+  if (!configs || !Array.isArray(configs) || configs.length === 0) {
+    return { ok: false, error: `Missing config for channel: ${channel}` };
   }
 
-  if (channel === "tg") {
-    return typeof env.TG_TOKEN === "string" ? env.TG_TOKEN.trim() : "";
+  const activeConfig = configs.find((c) => c.TOKEN === providedToken);
+  if (!activeConfig) {
+    return { ok: false, error: "Invalid token" };
   }
 
-  return "";
+  return { ok: true, config: activeConfig };
 }
 
 function parsePayload(bodyText, contentType) {
@@ -177,13 +176,13 @@ function parsePayload(bodyText, contentType) {
   };
 }
 
-async function sendByChannel(channel, env, message) {
+async function sendByChannel(channel, config, message) {
   if (channel === "wx") {
-    return sendToWxPusher(env, message);
+    return sendToWxPusher(config, message);
   }
 
   if (channel === "tg") {
-    return sendToTelegram(env, message);
+    return sendToTelegram(config, message);
   }
 
   throw new Error(`Unsupported channel: ${channel}`);

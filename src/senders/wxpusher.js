@@ -1,7 +1,7 @@
-export async function sendToWxPusher(env, message) {
-  const appToken = env.WXPUSHER_APP_TOKEN;
-  const uids = splitCsv(env.WXPUSHER_UIDS);
-  const topicIds = splitNumberCsv(env.WXPUSHER_TOPIC_IDS);
+export async function sendToWxPusher(config, message) {
+  const appToken = config.APP_TOKEN;
+  const uids = splitCsv(config.UIDS);
+  const topicIds = splitNumberCsv(config.TOPIC_IDS);
 
   if (!appToken) {
     throw new Error("Missing config: WXPUSHER_APP_TOKEN");

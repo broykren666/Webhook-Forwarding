@@ -1,6 +1,6 @@
-export async function sendToTelegram(env, message) {
-  const botToken = env.TG_BOT_TOKEN;
-  const chatId = env.TG_CHAT_ID;
+export async function sendToTelegram(config, message) {
+  const botToken = config.BOT_TOKEN;
+  const chatId = config.CHAT_ID;
 
   if (!botToken) {
     throw new Error("Missing config: TG_BOT_TOKEN");
