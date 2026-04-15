@@ -137,7 +137,10 @@ async function processMessageSync(data, env) {
       });
       
       if (aiResponse && aiResponse.response) {
-        message.content = `🤖【AI智能摘要】\n${aiResponse.response.trim()}\n\n---\n${message.content}`;
+        const aiText = aiResponse.response.trim();
+        // 因为底层的模板引流使用的是 .html 和 .summary 字段发送给各大 App 的，我们需要覆盖它们
+        message.html = `<div style="background:#f4f4f5; padding:10px; border-radius:8px; margin-bottom:15px; border-left: 4px solid #8b5cf6;"><strong>🤖【AI智能摘要】</strong><br/>\n${aiText}</div><hr/>\n${message.html}`;
+        message.summary = `[AI摘要] ${aiText.slice(0, 40)}`;
       }
     } catch (err) {
       console.error("AI 摘要生成失败", err);
