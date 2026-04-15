@@ -64,39 +64,29 @@ export default {
         userAgent: request.headers.get("user-agent") || "unknown",
         receivedAt: new Date().toISOString(),
       };
-      const message = buildMessageTemplate({ payload, request, source });
-
       const useAi = url.searchParams.get("use_ai") === "true" || url.searchParams.get("use_ai") === "1";
-      if (useAi && env.AI) {
-        try {
-          const rawData = JSON.stringify(payload);
-          // 截断数据以防止超出模型 token 限制
-          const truncatedData = rawData.length > 3000 ? rawData.substring(0, 3000) + '\n...[Data Truncated]' : rawData;
-          
-          const aiResponse = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
-            messages: [
-              { role: 'system', content: '你是一个分析Webhook数据的专业助手。请阅读以下JSON数据，并用简短、专业的中文提炼核心内容与摘要。请精简你的回答，不要超过100个字。' },
-              { role: 'user', content: truncatedData }
-            ]
-          });
-          
-          if (aiResponse && aiResponse.response) {
-            message.content = `🤖【AI智能摘要】\n${aiResponse.response.trim()}\n\n---\n${message.content}`;
-          }
-        } catch (err) {
-          console.error("AI 摘要生成失败", err);
-          // 发生错误时，将无缝降级并继续使用原有硬编码模板的数据
-        }
-      }
 
-      const result = await sendByChannel(channel, activeConfig, message);
-
-      return json({
-        ok: true,
+      const queueMessage = {
         channel,
-        title: message.title,
-        result,
-      });
+        config: activeConfig,
+        payload,
+        source,
+        useAi,
+        requestMeta: {
+          url: request.url,
+          headers: {
+            "x-github-event": request.headers.get("x-github-event") || ""
+          }
+        }
+      };
+
+      if (env.WEBHOOK_QUEUE) {
+        await env.WEBHOOK_QUEUE.send(queueMessage);
+        return json({ ok: true, channel, message: "Accepted and queued" }, 202);
+      } else {
+        const result = await processMessageSync(queueMessage, env);
+        return json({ ok: true, channel, status: "sync_processed", ...result });
+      }
     } catch (error) {
       return json(
         {
@@ -107,7 +97,55 @@ export default {
       );
     }
   },
+
+  async queue(batch, env) {
+    for (const msg of batch.messages) {
+      try {
+        await processMessageSync(msg.body, env);
+        msg.ack();
+      } catch (err) {
+        console.error("Queue process failed:", err);
+        msg.retry();
+      }
+    }
+  }
 };
+
+async function processMessageSync(data, env) {
+  const { channel, config, payload, source, useAi, requestMeta } = data;
+
+  const mockRequest = {
+    url: requestMeta.url,
+    headers: {
+      get: (key) => requestMeta.headers[key.toLowerCase()] || null
+    }
+  };
+
+  const message = buildMessageTemplate({ payload, request: mockRequest, source });
+
+  if (useAi && env.AI) {
+    try {
+      const rawData = JSON.stringify(payload);
+      const truncatedData = rawData.length > 3000 ? rawData.substring(0, 3000) + '\n...[Data Truncated]' : rawData;
+      
+      const aiResponse = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
+        messages: [
+          { role: 'system', content: '你是一个分析Webhook数据的专业助手。请阅读以下JSON数据，并用简短、专业的中文提炼核心内容与摘要。请精简你的回答，不要超过100个字。' },
+          { role: 'user', content: truncatedData }
+        ]
+      });
+      
+      if (aiResponse && aiResponse.response) {
+        message.content = `🤖【AI智能摘要】\n${aiResponse.response.trim()}\n\n---\n${message.content}`;
+      }
+    } catch (err) {
+      console.error("AI 摘要生成失败", err);
+    }
+  }
+
+  const result = await sendByChannel(channel, config, message);
+  return { title: message.title, result };
+}
 
 function resolveChannel(pathname) {
   if (pathname.startsWith("/wx/") || pathname === "/wx") {
