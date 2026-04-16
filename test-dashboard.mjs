@@ -82,7 +82,7 @@ const HTML_CONTENT = `
     }
     .config-header {
       width: 100%;
-      max-width: 900px;
+      max-width: 1100px;
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
@@ -91,6 +91,63 @@ const HTML_CONTENT = `
       border-radius: 12px;
       border: 1px solid var(--border);
       backdrop-filter: blur(10px);
+    }
+    .main-container {
+      display: flex;
+      width: 100%;
+      max-width: 1100px;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .platform-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+    .token-badge {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.1);
+      color: #60a5fa;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      margin-bottom: 15px;
+      font-family: monospace;
+    }
+    .button-group {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--primary);
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     .host-input {
       background: #000;
@@ -106,73 +163,11 @@ const HTML_CONTENT = `
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      width: 100%;
-      max-width: 900px;
-    }
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 24px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-    }
     .card:hover {
       transform: translateY(-5px);
       background-color: var(--card-hover);
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
       border-color: #475569;
-    }
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .card:hover::before {
-      opacity: 1;
-    }
-    .platform-name {
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 15px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    .token-badge {
-      display: inline-block;
-      background: rgba(59, 130, 246, 0.1);
-      color: #60a5fa;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      margin-bottom: 20px;
-      font-family: monospace;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      background-color: var(--primary);
-      color: white;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
     }
     button:hover {
       background-color: var(--primary-hover);
@@ -187,9 +182,7 @@ const HTML_CONTENT = `
       transform: scale(0.98);
     }
     .log-panel {
-      width: 100%;
-      max-width: 900px;
-      margin-top: 30px;
+      flex: 1.5;
       background-color: #000;
       border-radius: 12px;
       border: 1px solid var(--border);
@@ -199,9 +192,10 @@ const HTML_CONTENT = `
       color: #a78bfa;
       white-space: pre-wrap;
       overflow-y: auto;
-      height: 300px;
+      height: 600px;
       box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
     }
+
     .log-entry { margin-bottom: 10px; position:relative; animation: fadeIn 0.4s ease;}
     .log-time { color: var(--text-muted); font-size: 0.75rem; }
     .log-success { color: var(--success); }
@@ -231,12 +225,14 @@ const HTML_CONTENT = `
     </div>
   </div>
 
-  <div class="grid" id="cardContainer">
-    <!-- 动态渲染卡片 -->
-  </div>
+  <div class="main-container">
+    <div class="grid" id="cardContainer">
+      <!-- 动态渲染卡片 -->
+    </div>
 
-  <div class="log-panel" id="logPanel">
-    <div style="color: var(--text-muted);">[System] Dashboard Initialized. Waiting for tests...</div>
+    <div class="log-panel" id="logPanel">
+      <div style="color: var(--text-muted);">[System] Dashboard Initialized. Waiting for tests...</div>
+    </div>
   </div>
 
   <script>
@@ -294,6 +290,12 @@ const HTML_CONTENT = `
         const res = await fetch('/api/config');
         platforms = await res.json();
         
+        const icons = {
+          wx: '<svg style="width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>',
+          tg: '<svg style="width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
+          pm: '<svg style="width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'
+        };
+
         let found = false;
         Object.keys(platforms).forEach(ch => {
           platforms[ch].forEach(conf => {
@@ -301,12 +303,13 @@ const HTML_CONTENT = `
             const card = document.createElement('div');
             card.className = 'card';
             
-            const nameMapping = { wx: "WxPusher", tg: "Telegram", pm: "PushMe" };
             card.innerHTML = \`
-              <h2 class="platform-name">\${nameMapping[ch] || ch}</h2>
-              <div class="token-badge">Token: \${conf.TOKEN.slice(0,4)}****\${conf.TOKEN.slice(-4)}</div>
-              <button onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, false)'>📩 标准模拟推送</button>
-              <button class="btn-ai" onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, true)'>🤖 触发 AI 总结测试</button>
+              <div class="platform-icon">\${icons[ch] || ch}</div>
+              <div class="token-badge">\${conf.TOKEN.slice(0,4)}...\${conf.TOKEN.slice(-4)}</div>
+              <div class="button-group">
+                <button title="标准模拟推送" onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, false)'>📩</button>
+                <button title="触发 AI 总结测试" class="btn-ai" onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, true)'>🤖</button>
+              </div>
             \`;
             container.appendChild(card);
           });
@@ -322,6 +325,7 @@ const HTML_CONTENT = `
 
     loadData();
   </script>
+
 </body>
 </html>
 `;
@@ -378,9 +382,9 @@ const server = http.createServer(async (req, res) => {
 
 const PORT = 3000;
 server.listen(PORT, () => {
-  console.log(`\n================================`);
+  console.log(`\n======================================`);
   console.log(`🎨 Webhook Dashboard 测试面板已启动!`);
   console.log(`👉 请用浏览器打开: http://localhost:${PORT}`);
-  console.log(`================================\n`);
+  console.log(`======================================\n`);
   console.log(`配置已从 .dev.vars 中提取 [WxPusher: ${platforms.wx.length} 个, Telegram: ${platforms.tg.length} 个, PushMe: ${platforms.pm.length} 个]`);
 });
