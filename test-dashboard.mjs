@@ -88,14 +88,45 @@ const HTML_CONTENT = `
       max-width: 1100px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
       margin-bottom: 15px;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 12px 25px;
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px 20px;
+      border-radius: 14px;
       border: 1px solid var(--border);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
       flex-shrink: 0;
       box-sizing: border-box;
+    }
+    .host-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .host-input-wrapper svg {
+      position: absolute;
+      left: 12px;
+      color: var(--text-muted);
+      width: 16px;
+      height: 16px;
+    }
+    .host-input {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      color: #60a5fa;
+      padding: 8px 12px 8px 36px;
+      border-radius: 8px;
+      width: 300px;
+      font-family: 'Menlo', monospace;
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .host-input:focus {
+      border-color: var(--primary);
+      background: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.2), inset 0 1px 4px rgba(0,0,0,0.3);
     }
     .main-container {
       display: flex;
@@ -222,12 +253,16 @@ const HTML_CONTENT = `
   <h1>🚀 Webhook Debug Dashboard</h1>
 
   <div class="config-header">
-    <div>
-      <span style="color: var(--text-muted); margin-right: 10px;">目标服务节点 (Host):</span>
-      <input type="text" id="targetHost" class="host-input" value="http://127.0.0.1:8787">
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <span style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500;">调试目标 (Target Host):</span>
+      <div class="host-input-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <input type="text" id="targetHost" class="host-input" value="http://127.0.0.1:8787" placeholder="http://127.0.0.1:8787">
+      </div>
     </div>
-    <div>
-      <span style="color: var(--text-muted); font-size: 0.9rem;">(数据来源: 本地 .dev.vars)</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success);"></div>
+      <span style="color: var(--text-muted); font-size: 0.85rem;">Local Env Active</span>
     </div>
   </div>
 
