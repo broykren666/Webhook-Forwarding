@@ -100,13 +100,13 @@ const HTML_CONTENT = `
       align-items: flex-start;
     }
     .grid {
-      flex: 1;
+      width: 300px;
       display: flex;
       flex-direction: column;
       gap: 25px;
-      max-height: 80vh;
+      max-height: 85vh;
       overflow-y: auto;
-      padding-right: 10px;
+      padding-right: 15px;
     }
     .platform-section {
       display: flex;
