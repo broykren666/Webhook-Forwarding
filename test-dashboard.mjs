@@ -361,6 +361,8 @@ const HTML_CONTENT = `
         const res = await fetch('/api/config');
         platforms = await res.json();
         
+        container.innerHTML = ''; // 清空旧卡片，支持动态刷新
+        
         const channelMeta = [
           { key: 'tg', name: 'Telegram' },
           { key: 'wx', name: 'WxPusher' },
@@ -428,10 +430,43 @@ const server = http.createServer(async (req, res) => {
     return res.end(HTML_CONTENT);
   }
 
-  // 2. 将解析好的 .dev.vars 内嵌数据返回给前端界面
+// 2. 将解析好的 .dev.vars 数据返回给前端界面 (动态读取)
   if (req.url === '/api/config' && req.method === 'GET') {
+    let currentEnvVars = {};
+    try {
+      if (fs.existsSync(devVarsPath)) {
+        const content = fs.readFileSync(devVarsPath, "utf-8");
+        content.split("\n").forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith("#")) return;
+          const idx = line.indexOf("=");
+          if (idx !== -1) {
+            const key = line.slice(0, idx).trim();
+            let val = line.slice(idx + 1).trim();
+            if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+            else if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+            currentEnvVars[key] = val;
+          }
+        });
+      }
+    } catch (e) {
+      console.error("重新读取 .dev.vars 失败:", e.message);
+    }
+
+    const parseDynamicConfig = (key) => {
+      try {
+        return currentEnvVars[key] ? JSON.parse(currentEnvVars[key]) : [];
+      } catch(e) { return []; }
+    };
+
+    const currentPlatforms = {
+      wx: parseDynamicConfig("WXPUSHER"),
+      tg: parseDynamicConfig("TELEGRAM"),
+      pm: parseDynamicConfig("PUSHME")
+    };
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify(platforms));
+    return res.end(JSON.stringify(currentPlatforms));
   }
 
   // 3. 规避前端直连 localhost:8787 导致的跨域拦截，采用 node 层代发
