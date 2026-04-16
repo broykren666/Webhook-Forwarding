@@ -69,44 +69,53 @@ const HTML_CONTENT = `
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      padding: 15px 20px 40px;
+      height: 100vh;
+      overflow: hidden;
+      padding: 15px 20px;
+      box-sizing: border-box;
     }
     h1 {
       font-size: 2.2rem;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin: 0 0 1.5rem 0;
+      margin: 0 0 1rem 0;
       animation: fadeInDown 0.8s ease;
+      flex-shrink: 0;
     }
     .config-header {
       width: 100%;
       max-width: 1100px;
       display: flex;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       background: rgba(255, 255, 255, 0.05);
-      padding: 15px 25px;
+      padding: 12px 25px;
       border-radius: 12px;
       border: 1px solid var(--border);
       backdrop-filter: blur(10px);
+      flex-shrink: 0;
+      box-sizing: border-box;
     }
     .main-container {
       display: flex;
       width: 100%;
       max-width: 1100px;
       gap: 20px;
-      align-items: flex-start;
+      align-items: stretch;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      margin-bottom: 15px;
     }
     .grid {
       width: 260px;
       display: flex;
       flex-direction: column;
-      gap: 25px;
-      max-height: 85vh;
+      gap: 20px;
       overflow-y: auto;
-      padding-right: 15px;
+      padding-right: 10px;
+      flex-shrink: 0;
     }
     .platform-section {
       display: flex;
@@ -178,7 +187,7 @@ const HTML_CONTENT = `
     button.btn-ai:hover { opacity: 0.9; }
     
     .log-panel {
-      flex: 1.8;
+      flex: 1;
       background-color: #000;
       border-radius: 12px;
       border: 1px solid var(--border);
@@ -188,8 +197,8 @@ const HTML_CONTENT = `
       color: #a78bfa;
       white-space: pre-wrap;
       overflow-y: auto;
-      height: 700px;
       box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+      box-sizing: border-box;
     }
 
 
