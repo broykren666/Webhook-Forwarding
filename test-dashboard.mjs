@@ -100,7 +100,7 @@ const HTML_CONTENT = `
       align-items: flex-start;
     }
     .grid {
-      width: 300px;
+      width: 260px;
       display: flex;
       flex-direction: column;
       gap: 25px;
