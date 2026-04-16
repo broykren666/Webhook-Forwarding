@@ -25,6 +25,36 @@ try {
   console.error("读取 .dev.vars 失败:", e.message);
 }
 
+// 1.1 解析 wrangler.toml 获取默认 Host
+const wranglerPath = path.join(process.cwd(), "wrangler.toml");
+let defaultHost = "http://127.0.0.1:8787";
+try {
+  if (fs.existsSync(wranglerPath)) {
+    const lines = fs.readFileSync(wranglerPath, "utf-8").split("\n");
+    let inRoutes = false;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed === "[[routes]]") {
+        inRoutes = true;
+        continue;
+      }
+      if (inRoutes && trimmed.startsWith("pattern") && !trimmed.startsWith("#")) {
+        const match = trimmed.match(/pattern\s*=\s*"(.*?)"/);
+        if (match && match[1]) {
+          defaultHost = `https://${match[1]}`;
+          break;
+        }
+      }
+      // 如果进入了下一个配置块，重置标记
+      if (trimmed.startsWith("[") && trimmed !== "[[routes]]") {
+        inRoutes = false;
+      }
+    }
+  }
+} catch (e) {
+  console.error("解析 wrangler.toml 获取路由失败:", e.message);
+}
+
 const parseConfigSafely = (key) => {
   try {
     return envVars[key] ? JSON.parse(envVars[key]) : [];
@@ -257,7 +287,7 @@ const HTML_CONTENT = `
       <span style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500;">调试目标 (Target Host):</span>
       <div class="host-input-wrapper">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-        <input type="text" id="targetHost" class="host-input" value="http://127.0.0.1:8787" placeholder="http://127.0.0.1:8787">
+        <input type="text" id="targetHost" class="host-input" value="${defaultHost}" placeholder="http://127.0.0.1:8787">
       </div>
     </div>
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -433,9 +463,9 @@ const server = http.createServer(async (req, res) => {
 
 const PORT = 3000;
 server.listen(PORT, () => {
-  console.log(`\n======================================`);
+  console.log(`\n========================================`);
   console.log(`🎨 Webhook Dashboard 测试面板已启动!`);
   console.log(`👉 请用浏览器打开: http://localhost:${PORT}`);
-  console.log(`======================================\n`);
+  console.log(`========================================\n`);
   console.log(`配置已从 .dev.vars 中提取 [WxPusher: ${platforms.wx.length} 个, Telegram: ${platforms.tg.length} 个, PushMe: ${platforms.pm.length} 个]`);
 });
