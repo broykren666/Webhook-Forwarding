@@ -101,40 +101,62 @@ const HTML_CONTENT = `
     }
     .grid {
       flex: 1;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+    .platform-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .platform-group-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .platform-group-title::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
     }
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
+      border-radius: 12px;
+      padding: 16px 20px;
+      transition: all 0.3s ease;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      gap: 12px;
     }
-    .platform-icon {
-      font-size: 2rem;
-      margin-bottom: 12px;
-      color: var(--primary);
+    .card:hover {
+      border-color: var(--primary);
+      background-color: var(--card-hover);
+      transform: translateX(5px);
     }
-    .token-badge {
-      display: inline-block;
-      background: rgba(59, 130, 246, 0.1);
+    .token-row {
+      font-family: 'Menlo', monospace;
+      font-size: 0.85rem;
       color: #60a5fa;
-      padding: 4px 8px;
+      background: rgba(59, 130, 246, 0.1);
+      padding: 8px 12px;
       border-radius: 6px;
-      font-size: 0.7rem;
-      margin-bottom: 15px;
-      font-family: monospace;
+      word-break: break-all;
     }
-    .button-group {
+    .button-row {
       display: flex;
-      gap: 8px;
-      width: 100%;
+      gap: 10px;
     }
     button {
       flex: 1;
@@ -143,46 +165,20 @@ const HTML_CONTENT = `
       border-radius: 8px;
       background-color: var(--primary);
       color: white;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       justify-content: center;
       align-items: center;
+      gap: 8px;
     }
-    .host-input {
-      background: #000;
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 6px;
-      width: 250px;
-      outline: none;
-      transition: all 0.3s ease;
-    }
-    .host-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-    }
-    .card:hover {
-      transform: translateY(-5px);
-      background-color: var(--card-hover);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-      border-color: #475569;
-    }
-    button:hover {
-      background-color: var(--primary-hover);
-    }
-    button.btn-ai {
-      background: linear-gradient(135deg, #a855f7, #ec4899);
-    }
-    button.btn-ai:hover {
-      background: linear-gradient(135deg, #9333ea, #db2777);
-    }
-    button:active {
-      transform: scale(0.98);
-    }
+    button:hover { background-color: var(--primary-hover); }
+    button.btn-ai { background: linear-gradient(135deg, #a855f7, #ec4899); }
+    button.btn-ai:hover { opacity: 0.9; }
+    
     .log-panel {
-      flex: 1.5;
+      flex: 1.8;
       background-color: #000;
       border-radius: 12px;
       border: 1px solid var(--border);
@@ -192,9 +188,10 @@ const HTML_CONTENT = `
       color: #a78bfa;
       white-space: pre-wrap;
       overflow-y: auto;
-      height: 600px;
+      height: 700px;
       box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
     }
+
 
     .log-entry { margin-bottom: 10px; position:relative; animation: fadeIn 0.4s ease;}
     .log-time { color: var(--text-muted); font-size: 0.75rem; }
@@ -290,29 +287,39 @@ const HTML_CONTENT = `
         const res = await fetch('/api/config');
         platforms = await res.json();
         
-        const icons = {
-          wx: '<svg style="width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>',
-          tg: '<svg style="width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
-          pm: '<svg style="width:32px;height:32px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>'
-        };
+        const channelMeta = [
+          { key: 'tg', name: 'Telegram' },
+          { key: 'wx', name: 'WxPusher' },
+          { key: 'pm', name: 'PushMe' }
+        ];
 
         let found = false;
-        Object.keys(platforms).forEach(ch => {
-          platforms[ch].forEach(conf => {
+        channelMeta.forEach(meta => {
+          const ch = meta.key;
+          const configList = platforms[ch] || [];
+          
+          if (configList.length > 0) {
             found = true;
-            const card = document.createElement('div');
-            card.className = 'card';
+            const section = document.createElement('div');
+            section.className = 'platform-section';
+            section.innerHTML = \`<div class="platform-group-title">\${meta.name}</div>\`;
             
-            card.innerHTML = \`
-              <div class="platform-icon">\${icons[ch] || ch}</div>
-              <div class="token-badge">\${conf.TOKEN.slice(0,4)}...\${conf.TOKEN.slice(-4)}</div>
-              <div class="button-group">
-                <button title="标准模拟推送" onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, false)'>📩</button>
-                <button title="触发 AI 总结测试" class="btn-ai" onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, true)'>🤖</button>
-              </div>
-            \`;
-            container.appendChild(card);
-          });
+            configList.forEach(conf => {
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.innerHTML = \`
+                <div class="token-row" title="Full Token: \${conf.TOKEN}">
+                  Token: \${conf.TOKEN.slice(0, 8)}...\${conf.TOKEN.slice(-8)}
+                </div>
+                <div class="button-row">
+                  <button onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, false)'>📩 标准推送</button>
+                  <button class="btn-ai" onclick='fireWebhook("\${ch}", \${JSON.stringify(conf)}, true)'>🤖 AI 总结</button>
+                </div>
+              \`;
+              section.appendChild(card);
+            });
+            container.appendChild(section);
+          }
         });
 
         if(!found) {
