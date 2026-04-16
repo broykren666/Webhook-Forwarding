@@ -1,4 +1,4 @@
-import { buildMessageTemplate } from "./templates.js";
+import { buildMessageTemplate, escapeHtml } from "./templates.js";
 import { sendToTelegram } from "./senders/telegram.js";
 import { sendToWxPusher } from "./senders/wxpusher.js";
 import { sendToPushMe } from "./senders/pushme.js";
@@ -138,8 +138,9 @@ async function processMessageSync(data, env) {
       
       if (aiResponse && aiResponse.response) {
         const aiText = aiResponse.response.trim();
+        const safeAiText = escapeHtml(aiText);
         // 因为底层的模板引流使用的是 .html 和 .summary 字段发送给各大 App 的，我们需要覆盖它们
-        message.html = `<div style="background:#f4f4f5; padding:10px; border-radius:8px; margin-bottom:15px; border-left: 4px solid #8b5cf6;"><strong>🤖【AI智能摘要】</strong><br/>\n${aiText}</div><hr/>\n${message.html}`;
+        message.html = `<div style="background:#f4f4f5; padding:10px; border-radius:8px; margin-bottom:15px; border-left: 4px solid #8b5cf6;"><strong>🤖【AI智能摘要】</strong><br/>\n${safeAiText}</div><hr/>\n${message.html}`;
         message.summary = `[AI摘要] ${aiText.slice(0, 40)}`;
       }
     } catch (err) {

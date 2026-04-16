@@ -45,8 +45,10 @@ function htmlToTelegram(html) {
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<h2>(.*?)<\/h2>/gis, "\n<b>$1</b>\n")
     .replace(/<p>(.*?)<\/p>/gis, "$1\n")
-    .replace(/<pre>([\s\S]*?)<\/pre>/gi, "<pre>$1</pre>\n")
-    .replace(/<\/?(html|body)>/gi, "")
+    .replace(/<div.*?>([\s\S]*?)<\/div>/gis, "$1\n")
+    // Telegram is very strict about HTML tags. Strip all tags except the allowed ones.
+    // Allowed: b, strong, i, em, u, ins, s, strike, del, a, code, pre, blockquote
+    .replace(/<(?!(\/?(b|strong|i|em|u|ins|s|strike|del|a|code|pre|blockquote))\b)[^>]+>/gi, "")
     .trim();
 }
 
