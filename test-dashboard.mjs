@@ -424,10 +424,38 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  // 1. 首页路由返回纯 HTML
+  // 1. 首页路由返回纯 HTML (动态处理默认 Host)
   if (req.url === '/' && req.method === 'GET') {
+    let currentDefaultHost = "http://127.0.0.1:8787";
+    try {
+      if (fs.existsSync(wranglerPath)) {
+        const lines = fs.readFileSync(wranglerPath, "utf-8").split("\n");
+        let inRoutes = false;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed === "[[routes]]") {
+            inRoutes = true;
+            continue;
+          }
+          if (inRoutes && trimmed.startsWith("pattern") && !trimmed.startsWith("#")) {
+            const match = trimmed.match(/pattern\s*=\s*"(.*?)"/);
+            if (match && match[1]) {
+              currentDefaultHost = `https://${match[1]}`;
+              break;
+            }
+          }
+          if (trimmed.startsWith("[") && trimmed !== "[[routes]]") inRoutes = false;
+        }
+      }
+    } catch (e) {
+      console.error("动态解析 wrangler.toml 失败:", e.message);
+    }
+
+    // 将 HTML 中的占位符替换为当前的最新默认值
+    const dynamicHtml = HTML_CONTENT.replace('id="targetHost" class="host-input" value="${defaultHost}"', `id="targetHost" class="host-input" value="${currentDefaultHost}"`);
+
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    return res.end(HTML_CONTENT);
+    return res.end(dynamicHtml);
   }
 
 // 2. 将解析好的 .dev.vars 数据返回给前端界面 (动态读取)
