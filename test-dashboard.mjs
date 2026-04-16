@@ -70,14 +70,14 @@ const HTML_CONTENT = `
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 15px 20px 40px;
     }
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 2rem;
+      margin: 0 0 1.5rem 0;
       animation: fadeInDown 0.8s ease;
     }
     .config-header {
